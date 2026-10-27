@@ -13,7 +13,8 @@ background: linear-gradient(to left, #595959, #3f3f3f, #252525); /* W3C, IE 10+/
     background-image: url("png/bg.png");
     background-repeat: no-repeat;
     background-size: cover;
-    backdrop-filter: brightness(80%);
+    /* backdrop-filter eltávolítva: a body alatt nincs tartalom (nem látszott),
+       Safari/WebKit viszont üresen renderelheti tőle az oldalt. */
 
 }
 p {
@@ -301,3 +302,116 @@ button.usb-button.connected {
 .usb-status.ok { color: #7bff7b; }
 .usb-status.warn { color: #ffd479; }
 .usb-status.err { color: #ff8f8f; }
+
+/* ------------------------------------------------------------------ *
+ * iOS / mobil: telepített webappként is használható felület
+ * ------------------------------------------------------------------ */
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
+    /* iPhone notch / Dynamic Island / home indicator */
+    padding:
+        env(safe-area-inset-top, 0px)
+        env(safe-area-inset-right, 0px)
+        env(safe-area-inset-bottom, 0px)
+        env(safe-area-inset-left, 0px);
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.row,
+.module {
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+
+canvas.knob {
+    /* A knob húzása ne görgessen és ne zoomoljon az oldalon */
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.browser-hint {
+    max-width: 620px;
+    margin: 0 16px 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background-color: rgba(255, 212, 121, .15);
+    border: 1px solid rgba(255, 212, 121, .45);
+    color: #ffd479;
+    font-size: 0.9em;
+    line-height: 1.45;
+}
+
+@media (max-width: 700px) {
+    body {
+        justify-content: flex-start;
+    }
+    h1 {
+        font-size: 1.4em;
+        margin: 16px 12px 8px;
+        text-align: center;
+    }
+    h2 {
+        font-size: 1.15em;
+        margin: 18px 12px 0;
+        text-align: center;
+    }
+    p {
+        margin: 8px 14px;
+        font-size: 0.9em;
+    }
+    .row {
+        margin: 10px 8px;
+        padding: 10px;
+        gap: 4px;
+        justify-content: center;
+    }
+    .module {
+        margin: 10px 8px;
+        padding: 12px 8px;
+    }
+    .knob-container {
+        margin: 0 4px;
+    }
+    canvas.knob {
+        width: 64px;
+        height: 64px;
+    }
+    .label {
+        font-size: 0.75em;
+    }
+    .cluster {
+        margin: 6px;
+        padding: 8px;
+    }
+    .cluster.selected {
+        padding: 8px;
+    }
+    .flex-row,
+    .toggle-group,
+    .knob-group {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    select {
+        font-size: 0.9em;
+        padding: 6px 10px;
+        margin: 2px 4px;
+    }
+    .bottomText {
+        font-size: 0.85em;
+        padding: 0 12px;
+    }
+    .usb-box {
+        margin: 6px 10px 10px;
+    }
+}

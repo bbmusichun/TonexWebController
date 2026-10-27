@@ -19,6 +19,26 @@ Two hardware paths exist:
 
 No credentials or secrets of any kind are required.
 
+## iOS / mobil
+The page is also a home-screen web app:
+- `manifest.webmanifest` + `apple-mobile-web-app-*` meta tags, `viewport-fit=cover` and
+  `env(safe-area-inset-*)` padding in `style.css` (`display: standalone`, `theme-color`).
+  `nginx.conf` serves `manifest.webmanifest` as `application/manifest+json` (the alpine
+  `mime.types` has no entry for it).
+- Knobs use **Pointer Events** (`pointerdown`/`pointermove`/`pointerup`), not mouse events,
+  so touch dragging works on iOS; `canvas.knob { touch-action: none }` stops the page from
+  scrolling/zooming while a knob is dragged.
+- Layout: `.row`/`.module` wrap (`max-width: 100%`, `flex-wrap: wrap`) plus a
+  `@media (max-width: 700px)` block. Without it the knob rows were ~735 px wide on a 375 px
+  iPhone screen and got clipped (body is a centred flex box, so the clipped part was
+  unreachable) — that is the "does not open / broken on iPhone" symptom.
+- Safari (iOS and macOS) has **no** Web MIDI, Web Serial or WebUSB, so the pedal cannot be
+  driven from Apple browsers. `updateBrowserSupport()` in `app.js` shows `#browser-hint`,
+  disables the USB button and `initMIDI()` puts a placeholder in the device select instead of
+  failing silently. Do not remove that messaging to "clean up" the UI.
+- Avoid `backdrop-filter` on `body`: WebKit can render the whole page blank with it.
+
+
 Protocol references (all open source, credited in the file header): vit3k/tonex_controller
 (protocol notes, MIT), yvr-vibe/txone-studio (framing/CRC + state layout, MIT),
 Builty/TonexOneController (parameter indices, Apache-2.0).

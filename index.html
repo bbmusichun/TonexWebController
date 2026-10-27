@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ToneX pedal webcontroller</title>
+    <!-- iOS / PWA: teljes képernyős, telepíthető webapp a home screenről -->
+    <meta name="theme-color" content="#252525">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ToneX">
+    <link rel="manifest" href="manifest.webmanifest">
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link
     rel="apple-touch-icon"
@@ -19,13 +26,14 @@
   <link
     rel="icon"
     type="image/png"
-    sizes="16x16"
-    href="png/favicon-16x16.png"
+    sizes="192x192"
+    href="png/android-chrome-192x192.png"
   />
 </head>
 <body>
     <h1>ToneX pedal webcontroller</h1>
     <p>Hi, this is a hobbyproject where you can control your <a href="https://www.ikmultimedia.com/products/tonexpedal/">Tonex Pedal</a> from your browser. Instructions at the bottom. A TONEX ONE USB-C kábellel a lenti USB-móddal vezérelhető.</p>
+    <p id="browser-hint" class="browser-hint" hidden></p>
     <div>Midi-device: <select id="midi-outputs" class="basicDrop"></select> </div>
     <div>Midi-Channel:<select id="midi-channel" class="basicDrop">
         <!-- Kanalval från 1 till 16 -->
@@ -51,8 +59,6 @@
         <span id="usb-status" class="usb-status info">ToneX ONE USB-mód (Chrome/Edge + USB-adatkábel)</span>
     </div>
 
-        <!-- Denna div kommer att fyllas dynamiskt med JavaScript -->
-    </div>
     <div class="row">
         <div class="cluster">
             <select class="bank-select"></select>

@@ -1,0 +1,25 @@
+{
+  "name": "ToneX pedal webcontroller",
+  "short_name": "ToneX",
+  "description": "Böngészős MIDI / USB vezérlő IK Multimedia ToneX pedálhoz.",
+  "lang": "hu",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#252525",
+  "theme_color": "#252525",
+  "icons": [
+    {
+      "src": "png/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "png/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -150,32 +150,41 @@ function setupKnob(canvas, label) {
     let value = parseInt(canvas.dataset.value, 10);
     const ccNumber = parseInt(canvas.dataset.cc, 10);
 
-    canvas.addEventListener('mousedown', (event) => {
+    function onPointerMove(event) {
+        if (startY === null) return;
+
+        const delta = startY - event.clientY;
+        value = Math.max(0, Math.min(127, value + delta / 2));
+        value = Math.round(value);
+        canvas.dataset.value = value;
         startY = event.clientY;
 
-        function onMouseMove(event) {
-            const delta = startY - event.clientY;
-            value = Math.max(0, Math.min(127, value + delta / 2));
-            value = Math.round(value);
-            canvas.dataset.value = value;
-            startY = event.clientY;
+        drawKnob(canvas, value);
 
-            drawKnob(canvas, value);
+        // Skala om värdet för visning
+        const displayValue = ((value / 127) * 10).toFixed(1);
+        label.innerHTML = `${label.innerHTML.split('<br>')[0]}<br>${displayValue}`;
 
-            // Skala om värdet för visning
-            const displayValue = ((value / 127) * 10).toFixed(1);
-            label.innerHTML = `${label.innerHTML.split('<br>')[0]}<br>${displayValue}`;
+        sendMIDICC(ccNumber, value);
+    }
 
-            sendMIDICC(ccNumber, value);
+    // Pointer Events: egér, trackpad és érintés (iOS) egyaránt működik.
+    canvas.addEventListener('pointerdown', (event) => {
+        if (event.button > 0) return; // csak bal gomb / ujj
+        event.preventDefault();
+        startY = event.clientY;
+        try {
+            canvas.setPointerCapture(event.pointerId);
+        } catch (error) {
+            // Synthetic or already-released pointer: húzás capture nélkül is működik.
         }
-
-        function onMouseUp() {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        }
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+    });
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', () => {
+        startY = null;
+    });
+    canvas.addEventListener('pointercancel', () => {
+        startY = null;
     });
 }
 
@@ -191,11 +200,57 @@ function sendMIDICC(ccNumber, value) {
     }
 }
 
+function showSelectPlaceholder(select, text) {
+    if (!select) return;
+    select.innerHTML = '';
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = text;
+    option.disabled = true;
+    option.selected = true;
+    select.appendChild(option);
+    select.disabled = true;
+}
+
+// iOS Safari (és a macOS Safari) nem ad Web MIDI / Web USB hozzáférést.
+// Ilyenkor a felület használható marad, de ezt érthetően jelezzük.
+function updateBrowserSupport() {
+    const midiCapable = typeof navigator.requestMIDIAccess === 'function';
+    const usbCapable = !!(navigator.serial || navigator.usb);
+    const hint = document.getElementById('browser-hint');
+
+    if (midiCapable || usbCapable) {
+        if (hint) hint.hidden = true;
+        return;
+    }
+
+    const button = document.getElementById('usb-connect');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'USB nem elérhető';
+    }
+    if (!hint) return;
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    hint.textContent = isIOS
+        ? 'Ez az eszköz (iOS Safari) nem enged Web MIDI / Web USB hozzáférést, ezért a felület működik, de a pedált innen nem tudod vezérelni. Telepítés: Megosztás → Főképernyőhöz adás. Vezérléshez Macen/PC-n Chrome vagy Edge kell.'
+        : 'Ez a böngésző nem támogatja a Web MIDI / Web USB hozzáférést, ezért a pedált innen nem tudod vezérelni. Használj Chrome-ot vagy Edge-et.';
+    hint.hidden = false;
+}
+
 async function initMIDI() {
+    const select = document.getElementById('midi-outputs');
+
+    if (typeof navigator.requestMIDIAccess !== 'function') {
+        console.warn('A Web MIDI nem érhető el ebben a böngészőben (Safari / iOS).');
+        showSelectPlaceholder(select, 'Web MIDI nem támogatott');
+        return;
+    }
+
     try {
         const midiAccess = await navigator.requestMIDIAccess();
         const outputs = Array.from(midiAccess.outputs.values());
-        const select = document.getElementById('midi-outputs');
 
         outputs.forEach((output, index) => {
             const option = document.createElement('option');
@@ -223,6 +278,7 @@ async function initMIDI() {
 
     } catch (error) {
         console.error('MIDI-åtkomst misslyckades:', error);
+        showSelectPlaceholder(select, 'Nincs MIDI-engedély');
     }
 }
 document.querySelectorAll('.bank-select').forEach(select => {
@@ -673,4 +729,5 @@ createDelayModule();
 createNewModule();
 
 createKnobs();
+updateBrowserSupport();
 initMIDI();
