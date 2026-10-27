@@ -1,0 +1,21 @@
+services:
+  web:
+    # Static site: no build step, files are served straight from the cloned repo,
+    # so edits are visible on refresh (no image rebuild needed).
+    image: nginx:alpine
+    labels:
+      base44.project: "ToneX Web Controller"
+      base44.kind: "web"
+      base44.port: "3000"
+    ports:
+      - "3000:80"
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
