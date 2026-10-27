@@ -275,3 +275,29 @@ select:focus {
     right: -30px;
     content: "Post";
 }
+/* TONEX ONE USB mode */
+.usb-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+button.usb-button {
+    background-color: #D3D3D3;
+    color: #111;
+    font-weight: bold;
+}
+button.usb-button.connected {
+    background-color: #00FF00;
+}
+.usb-status {
+    font-size: 0.85em;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, .35);
+}
+.usb-status.ok { color: #7bff7b; }
+.usb-status.warn { color: #ffd479; }
+.usb-status.err { color: #ff8f8f; }

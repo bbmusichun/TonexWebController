@@ -180,6 +180,10 @@ function setupKnob(canvas, label) {
 }
 
 function sendMIDICC(ccNumber, value) {
+    // TONEX ONE USB mode (see tonex-one-usb.js) speaks the pedal's own protocol.
+    if (window.tonexOneUsb && window.tonexOneUsb.connected) {
+        window.tonexOneUsb.sendCC(ccNumber, value);
+    }
     if (midiOutput) {
         const controlChangeMessage = [0xB0 + midiChannel, ccNumber, value];
         midiOutput.send(controlChangeMessage);
@@ -265,6 +269,9 @@ function updateButtons(buttons, bank) {
 }
 
 function sendMIDIPC(pcValue) {
+    if (window.tonexOneUsb && window.tonexOneUsb.connected) {
+        window.tonexOneUsb.sendPC(pcValue);
+    }
     if (midiOutput) {
         const programChangeMessage = [0xC0 + midiChannel, pcValue];
         midiOutput.send(programChangeMessage);
@@ -463,13 +470,6 @@ function renderKnobsForOption(knobs, rowContainer, dropdown, mainToggle, secondT
     rowContainer.appendChild(sendAllButton);
 }
 
-function sendMIDICC(ccNumber, value) {
-    if (midiOutput) {
-        const controlChangeMessage = [0xB0 + midiChannel, ccNumber, value];
-        midiOutput.send(controlChangeMessage);
-        console.log(`MIDI CC ${ccNumber} på kanal ${midiChannel + 1} skickat:`, value);
-    }
-}
 
 
 function createDelayModule() {

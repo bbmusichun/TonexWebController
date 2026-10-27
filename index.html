@@ -25,7 +25,7 @@
 </head>
 <body>
     <h1>ToneX pedal webcontroller</h1>
-    <p>Hi, this is a hobbyproject where you can control your <a href="https://www.ikmultimedia.com/products/tonexpedal/">Tonex Pedal</a> from your browser. Instructions at the bottom. Doesn't work with Tonex One.</p>
+    <p>Hi, this is a hobbyproject where you can control your <a href="https://www.ikmultimedia.com/products/tonexpedal/">Tonex Pedal</a> from your browser. Instructions at the bottom. A TONEX ONE USB-C kábellel a lenti USB-móddal vezérelhető.</p>
     <div>Midi-device: <select id="midi-outputs" class="basicDrop"></select> </div>
     <div>Midi-Channel:<select id="midi-channel" class="basicDrop">
         <!-- Kanalval från 1 till 16 -->
@@ -46,6 +46,10 @@
         <option value="14">MidiCh 15</option>
         <option value="15">MidiCh 16</option>
     </select></div>
+    <div class="usb-box">
+        <button id="usb-connect" class="usb-button">Csatlakozás USB-n</button>
+        <span id="usb-status" class="usb-status info">ToneX ONE USB-mód (Chrome/Edge + USB-adatkábel)</span>
+    </div>
 
         <!-- Denna div kommer att fyllas dynamiskt med JavaScript -->
     </div>
@@ -95,6 +99,7 @@
         <br>DISCLAIMER: These pedals are made to recieve midi, in case of bugs or glitches, reboot your pedal. 
         <br>I've stress tested my own pedals without problem but use this site at your own risk. I take no responsibility. 
         <br><a href="https://www.ikmultimedia.com/">ToneX Pedal is an IK Multimedia product</a></p>
+    <script src="tonex-one-usb.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
