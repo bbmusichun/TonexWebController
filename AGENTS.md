@@ -46,6 +46,33 @@ The page is also a home-screen web app:
   open a `ws://` socket (mixed content), which is exactly why the bridge serves the app itself.
 - Avoid `backdrop-filter` on `body`: WebKit can render the whole page blank with it.
 
+## Natív iOS app (`ios/`)
+`ios/ToneXController.xcodeproj` is a real iOS app that reaches the pedal over **USB** — the one
+thing Safari cannot do. iOS has no Web MIDI / Web Serial / WebUSB, but it *does* have
+**CoreMIDI**, which sees class-compliant USB-MIDI devices through a USB-C/Lightning camera
+adapter (so ToneX Pedal and TONEX ONE+ work; the original TONEX ONE's proprietary CDC-ACM link
+still needs `bridge/tonex-bridge.py`).
+
+- The UI is **not** rewritten: the app is a `WKWebView` loading this repo's `index.html` +
+  `app.js`, plus an "Copy web app" build-script phase that copies the root web files into the
+  bundle's `Web/` folder on every build. Keep that file list in the phase in sync if a new
+  root-level script is added.
+- `native-midi.js` (root, loaded **before** `tonex-one-usb.js` and `app.js`) installs a
+  `navigator.requestMIDIAccess` shim backed by `window.webkit.messageHandlers.tonexMIDI`, so
+  `initMIDI()`/`sendMIDICC()`/`sendMIDIPC()` in `app.js` work unchanged. It returns immediately
+  when that handler is absent, so the website is unaffected. `app.js`'s
+  `updateBrowserSupport()` returns early on `window.tonexNative` to suppress the "Safari has no
+  USB" warning inside the app.
+- Message protocol: JS posts `{id, action: "list"}` / `{id, action: "send", target, bytes}`;
+  Swift answers `list` by evaluating `window.tonexNative._resolve(id, true, [<devices>])` and
+  pushes device changes with `window.tonexNative._devicesChanged([...])` on CoreMIDI
+  `msgSetupChanged`. Device ids are CoreMIDI `kMIDIPropertyUniqueID` values.
+- **Cannot be built or run in this sandbox** (no macOS/Xcode, no simulator, no signing). Treat
+  the Swift code as unverified here; only the web side is testable (the shim is inert in a
+  browser). Edit Swift with that in mind: be conservative, no clever shortcuts.
+- Build/install steps for the user are in `ios/README.md` (Xcode → Signing team → Run; free
+  Apple ID builds expire after 7 days).
+
 
 Protocol references (all open source, credited in the file header): vit3k/tonex_controller
 (protocol notes, MIT), yvr-vibe/txone-studio (framing/CRC + state layout, MIT),

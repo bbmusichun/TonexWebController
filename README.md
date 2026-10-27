@@ -7,6 +7,23 @@
     3. Choose midichannel if you've changed it.
     DISCLAIMER: The information is one way, the knobs won't know what your settings are until you move them here. 
 
+## iPhone / iPad – natív app (USB-vel)
+
+Az iOS Safariból a pedál USB-n nem érhető el (Apple nem ad Web MIDI / Web USB hozzáférést).
+Ezért van a repóban egy **natív iOS app** (`ios/`): ugyanez a felület `WKWebView`-ban, de a
+MIDI a rendszer **CoreMIDI**-ján megy ki, ami USB-C / Lightning Camera Adapteren át eléri a
+class-compliant USB-MIDI pedálokat (**ToneX Pedal**, **TONEX ONE+**).
+
+1. Macen: `open ios/ToneXController.xcodeproj` (Xcode 15+).
+2. Signing & Capabilities → válaszd ki a saját Apple ID-det (ingyenes is elég).
+3. iPhone kiválasztása → **Run**. Első indítás után a telefonon: Beállítások → Általános →
+   VPN és eszközkezelés → a profil megbízhatósítása.
+4. Az app tetején zöld pont és az eszköz neve jelzi, hogy a pedál látszik.
+
+Részletek, korlátok és a felépítés: [ios/README.md](ios/README.md).
+Az eredeti **TONEX ONE** (a saját CDC-ACM protokollal) iOS-en továbbra sem nyitható meg — arra
+való a lenti hálózati híd.
+
 ## iPhone / iPad (Safari) – hálózati híd
 
 Az iOS Safari (és a macOS Safari) nem ad USB-hozzáférést a weboldalaknak, ezért a TONEX ONE

@@ -215,6 +215,10 @@ function showSelectPlaceholder(select, text) {
 // iOS Safari (és a macOS Safari) nem ad Web MIDI / Web USB hozzáférést.
 // Ilyenkor a felület használható marad, de ezt érthetően jelezzük.
 function updateBrowserSupport() {
+    // A natív iOS appban (native-midi.js) a CoreMIDI-híd adja a MIDI-t, nincs
+    // szükség a "Safari nem tud USB-t" figyelmeztetésre.
+    if (window.tonexNative) return;
+
     const midiCapable = typeof navigator.requestMIDIAccess === 'function';
     const usbCapable = !!(navigator.serial || navigator.usb);
     const hint = document.getElementById('browser-hint');
