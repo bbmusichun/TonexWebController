@@ -32,10 +32,18 @@ The page is also a home-screen web app:
   `@media (max-width: 700px)` block. Without it the knob rows were ~735 px wide on a 375 px
   iPhone screen and got clipped (body is a centred flex box, so the clipped part was
   unreachable) — that is the "does not open / broken on iPhone" symptom.
-- Safari (iOS and macOS) has **no** Web MIDI, Web Serial or WebUSB, so the pedal cannot be
-  driven from Apple browsers. `updateBrowserSupport()` in `app.js` shows `#browser-hint`,
-  disables the USB button and `initMIDI()` puts a placeholder in the device select instead of
-  failing silently. Do not remove that messaging to "clean up" the UI.
+- Safari (iOS and macOS) has **no** Web MIDI, Web Serial or WebUSB (Apple has no plans to add
+  them), so Apple browsers reach the pedal through the **network bridge** (`bridge/tonex-bridge.py`,
+  stdlib-only Python 3, runs on the Mac that has the pedal on USB). It serves this same static
+  app plus a `/ws` WebSocket that is a dumb byte pipe — framing/CRC stay in the browser — so
+  `connectBridge()` in `tonex-one-usb.js` uses the same handshake as Web Serial. `connect()`
+  falls back to it when neither `navigator.serial` nor `navigator.usb` exists.
+  `updateBrowserSupport()` in `app.js` shows `#browser-hint` with instructions on those
+  browsers, and turns it into a green "híd elérve" note when `GET /bridge-status.json`
+  (served by the bridge) answers. `initMIDI()` puts a placeholder in the device select instead
+  of failing silently. Do not remove that messaging to "clean up" the UI.
+  The bridge page must be opened over plain `http://<lan-ip>:8765/` — an `https` page cannot
+  open a `ws://` socket (mixed content), which is exactly why the bridge serves the app itself.
 - Avoid `backdrop-filter` on `body`: WebKit can render the whole page blank with it.
 
 
@@ -67,6 +75,11 @@ permissions — a default nginx worker user gets `403 Forbidden` on the mounted 
 - Page should render 30 knobs (`canvas.knob`), 50 options per bank select, and the
   Delay/Modulation modules built by `createDelayModule()` / `createNewModule()`.
 - No build, lint or test tooling exists in this repo.
+- Bridge, without hardware: create a pty (`python3 -c "import pty; ..."`), run
+  `python3 bridge/tonex-bridge.py --port <pty-slave> --http-port 8765`, then talk to
+  `ws://127.0.0.1:8765/ws`. Bytes sent by the client must appear untouched on the pty, and
+  bytes written to the pty must come back as binary WebSocket frames; `GET /` must serve
+  `index.html` and `GET /bridge-status.json` must answer `{"bridge": true, ...}`.
 - USB protocol layer is testable without hardware: load `tonex-one-usb.js` in Node with a stub
   `window`/`document` and check `window.ToneXOneProtocol` (CRC/framing, `parseState`,
   `mutateState`, `ccToValue`). The documented hello frame must frame to

@@ -23,6 +23,19 @@
     const FLAG = 0x7e;
     const ESC = 0x7d;
 
+    const BRIDGE_HELP =
+        'Ez a böngésző (Safari / iOS) nem ad USB-hozzáférést. Megoldás: hálózati híd — ' +
+        'a pedálhoz USB-C kábellel kötött Macen futtasd: "python3 bridge/tonex-bridge.py", ' +
+        'majd ezen az eszközön nyisd meg a híd által kiírt címet (pl. http://192.168.1.20:8765/).';
+
+    // A híd ugyanazt az origin-t szolgálja ki, amiről az app betöltődött.
+    function bridgeUrl() {
+        if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) {
+            throw new Error(BRIDGE_HELP);
+        }
+        return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    }
+
     /* ------------------------------------------------------------------ *
      * Framing (HDLC asynchronous) + CRC-CCITT
      * ------------------------------------------------------------------ */
@@ -477,7 +490,8 @@
                 } else if (typeof navigator !== 'undefined' && navigator.usb) {
                     await this.connectUsb(navigator.usb);
                 } else {
-                    throw new Error('Ez a böngésző nem ad USB-hozzáférést. Asztali Chrome/Edge vagy Android Chrome kell.');
+                    // iOS / iPadOS / Safari: nincs WebUSB, a Macen futó híd adja tovább a bájtokat.
+                    await this.connectBridge(bridgeUrl());
                 }
             } catch (error) {
                 await this.close();
@@ -486,6 +500,44 @@
                     : error.message;
                 this.status('USB hiba: ' + hint, 'err');
             }
+        }
+
+        // Hálózati híd (bridge/tonex-bridge.py): a híd csak nyers bájtokat továbbít,
+        // a keretezés/CRC továbbra is itt, a böngészőben történik.
+        async connectBridge(url) {
+            if (typeof WebSocket === 'undefined') throw new Error(BRIDGE_HELP);
+            const socket = new WebSocket(url);
+            socket.binaryType = 'arraybuffer';
+            await new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    try { socket.close(); } catch (error) {}
+                    reject(new Error(BRIDGE_HELP));
+                }, 5000);
+                socket.onopen = () => {
+                    clearTimeout(timer);
+                    resolve();
+                };
+                socket.onerror = () => {
+                    clearTimeout(timer);
+                    reject(new Error(BRIDGE_HELP));
+                };
+            });
+
+            this.socket = socket;
+            this.transport = 'bridge';
+            socket.onmessage = (event) => {
+                if (typeof event.data === 'string') return;
+                const data = new Uint8Array(event.data);
+                if (data.length) this.decoder.push(data);
+            };
+            socket.onclose = () => {
+                if (this.transport !== 'bridge' || this.socket !== socket) return;
+                this.connected = false;
+                this.socket = null;
+                this.status('Híd kapcsolat megszakadt.', 'err');
+            };
+            await delay(150);
+            await this.handshake('ToneX ONE (hálózati híd)');
         }
 
         async connectSerial(serial) {
@@ -583,6 +635,11 @@
             } else if (this.transport === 'webusb') {
                 if (!this.device) throw new Error('A pedál nincs csatlakoztatva.');
                 await this.device.transferOut(this.output.endpointNumber, data);
+            } else if (this.transport === 'bridge') {
+                if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                    throw new Error('A híd nincs csatlakoztatva.');
+                }
+                this.socket.send(data);
             }
         }
 
@@ -631,10 +688,16 @@
             const writer = this.writer;
             const port = this.port;
             const device = this.device;
-            this.reader = this.writer = this.port = this.device = null;
+            const socket = this.socket;
+            this.reader = this.writer = this.port = this.device = this.socket = null;
             try {
                 await reader?.cancel();
             } catch (error) {}
+            if (socket) {
+                try {
+                    socket.close();
+                } catch (error) {}
+            }
             if (writer) {
                 try {
                     await writer.close();

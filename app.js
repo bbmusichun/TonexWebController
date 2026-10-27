@@ -219,24 +219,29 @@ function updateBrowserSupport() {
     const usbCapable = !!(navigator.serial || navigator.usb);
     const hint = document.getElementById('browser-hint');
 
-    if (midiCapable || usbCapable) {
-        if (hint) hint.hidden = true;
-        return;
-    }
+    if (!hint || (midiCapable && usbCapable)) return;
 
-    const button = document.getElementById('usb-connect');
-    if (button) {
-        button.disabled = true;
-        button.textContent = 'USB nem elérhető';
-    }
-    if (!hint) return;
+    const warning = usbCapable
+        ? 'Web MIDI nincs ebben a böngészőben, ezért a MIDI-es vezérlés nem elérhető — a TONEX ONE USB-mód viszont működik.'
+        : 'A Safari nem ad USB-hozzáférést a pedálhoz. Megoldás: hálózati híd — a pedálhoz USB-C kábellel kötött Macen futtasd: "python3 bridge/tonex-bridge.py", majd ezen az eszközön nyisd meg a híd által kiírt címet (pl. http://192.168.1.20:8765/). Ott a Csatlakozás gomb már közvetlenül működik.';
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    hint.textContent = isIOS
-        ? 'Ez az eszköz (iOS Safari) nem enged Web MIDI / Web USB hozzáférést, ezért a felület működik, de a pedált innen nem tudod vezérelni. Telepítés: Megosztás → Főképernyőhöz adás. Vezérléshez Macen/PC-n Chrome vagy Edge kell.'
-        : 'Ez a böngésző nem támogatja a Web MIDI / Web USB hozzáférést, ezért a pedált innen nem tudod vezérelni. Használj Chrome-ot vagy Edge-et.';
-    hint.hidden = false;
+    // Ha a Macen futó híd szolgálja ki az oldalt, nincs szükség figyelmeztetésre.
+    fetch('bridge-status.json', { cache: 'no-store' })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((info) => {
+            if (info && info.bridge) {
+                hint.textContent = 'Hálózati híd elérve (' + info.port + '). Kattints a Csatlakozás gombra.';
+                hint.className = 'browser-hint ok';
+            } else {
+                hint.textContent = warning;
+                hint.className = 'browser-hint';
+            }
+            hint.hidden = false;
+        })
+        .catch(() => {
+            hint.textContent = warning;
+            hint.hidden = false;
+        });
 }
 
 async function initMIDI() {
